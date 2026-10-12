@@ -1,6 +1,5 @@
 import pickle
 import urllib.request
-import zipfile
 import hashlib
 import numpy as np
 import cv2
@@ -12,24 +11,19 @@ from deepface import DeepFace
 from PIL import Image
 import vptree
 import bz2
-# ── 1. VP-Tree + paths + vecs_arr desde GitHub ────────────────────────────
-print("[INFO] descargando vptree.pkl...")
-urllib.request.urlretrieve("VPTREE_URL","vptree.pkl")
+# ── 1. VP-Tree + paths + vecs_arr (ficheros locales del Space) ────────────
+print("[INFO] cargando vptree.pkl...")
 with open("vptree.pkl", "rb") as f:
     data = pickle.load(f)
 
 paths = data["paths"]
 vecs_arr = data["vecs_arr"]
+identidades = data["identities"]
 print(f"[INFO] {len(paths)} caras cargadas")
 
-# ── 2. Caras recortadas desde GitHub releases ──────────────────────────────
-print("[INFO] descargando carasRecortadas...")
-urllib.request.urlretrieve("FACE_CROPS_URL","carasRecortadas.zip")
-with zipfile.ZipFile("carasRecortadas.zip", "r") as z:
-    z.extractall("carasRecortadas")
-print("[INFO] carasRecortadas listas")
-
+# ── 2. Caras recortadas (carpeta local del Space) ──────────────────────────
 CARAS = Path("carasRecortadas")
+print(f"[INFO] {len(list(CARAS.glob('*.jpg')))} recortes en {CARAS}")
 # ── 3. VP-Tree ─────────────────────────────────────────────────────────────
 class Vec:
     def __init__(self, idx, arr):
@@ -157,17 +151,19 @@ def _embeddings_batch(recortes_bgr: list) -> list:
     return embs
 
 # ── 9. Búsqueda VP-Tree ────────────────────────────────────────────────────
+UMBRAL = 9.655  # umbral de máximo F1 calculado en el Notebook 5
+
 def _vp_query(emb_vec, k=5):
     query   = Vec(-1, np.array(emb_vec, dtype=np.float32))
     vecinos = vp.get_n_nearest_neighbors(query, k)
-    return [(float(d), paths[v.idx]) for d, v in vecinos]
+    return [(float(d), v.idx) for d, v in vecinos if d <= UMBRAL]
 
 def resultados_a_galeria(results):
     salida = []
-    for dist, nombre in results:
-        ruta = CARAS / nombre
+    for dist, idx in results:
+        ruta = CARAS / paths[idx]
         img  = Image.open(ruta) if ruta.exists() else Image.new("RGB", (160, 160))
-        salida.append((img, f"d={dist:.3f}"))
+        salida.append((img, f"{identidades[idx]} · d={dist:.3f}"))
     return salida
 
 # ── 10. Opción A: cara recortada ────────────────────────────────────────────
@@ -244,16 +240,24 @@ def buscar_foto(imagen_pil, progress=gr.Progress()):
     cache_msg = f" ({hits_iniciales}/{n} desde cache)" if hits_iniciales else ""
     msg_final = (
         f"{n} cara(s) detectada(s) por {detector_usado}{msg_cap}{cache_msg} "
-        f"— top 5 más similares por cara."
+        f"— top 5 más similares por cara con d ≤ {UMBRAL}."
     )
     yield todas, msg_final
 
 # ── 12. Interfaz Gradio ────────────────────────────────────────────────────
-with gr.Blocks(theme=gr.themes.Soft(), title="Motor de Búsqueda Facial") as demo:
-    gr.Markdown("# Motor de Búsqueda Facial — Trabajo IA - Grupo 4")
+EJEMPLOS = sorted(Path("examples").glob("*.jpg"))
+EJEMPLOS_RECORTE = [CARAS / f"{p.stem}__orig.jpg" for p in EJEMPLOS]
+EJEMPLOS_RECORTE = [p for p in EJEMPLOS_RECORTE if p.exists()]
+
+with gr.Blocks(title="Motor de Búsqueda Facial") as demo:
+    gr.Markdown("# Motor de Búsqueda Facial")
     gr.Markdown(
-        "Busca las caras más similares en el dataset del Gobierno de La Rioja. "
-        "Usa la pestaña según el tipo de imagen que tengas."
+        f"Busca las caras más similares en un índice de {len(paths)} recortes de caras "
+        "**sintéticas** (dataset SFHQ, CC0): ninguna es una persona real. Cada cara "
+        "aparece varias veces con pequeñas variaciones (recorte, giro, brillo, volteo). "
+        f"Solo se muestran resultados con distancia d ≤ {UMBRAL}. "
+        "Código: [github.com/santiagodie/face-similarity-search-pipeline]"
+        "(https://github.com/santiagodie/face-similarity-search-pipeline)"
     )
 
     with gr.Tabs():
@@ -265,15 +269,11 @@ with gr.Blocks(theme=gr.themes.Soft(), title="Motor de Búsqueda Facial") as dem
             gr.Button("Buscar", variant="primary").click(
                 fn=buscar_cara, inputs=inp_a, outputs=out_a, concurrency_limit=1,
             )
-            gr.Examples(
-                examples=[
-                    ["examples/cara1.jpg"], ["examples/cara2.jpg"],
-                    ["examples/cara3.jpg"], ["examples/cara4.jpg"],
-                    ["examples/cara5.jpg"], ["examples/cara6.jpg"],
-                    ["examples/cara7.jpg"],
-                ],
-                inputs=inp_a, cache_examples=False,
-            )
+            if EJEMPLOS_RECORTE:
+                gr.Examples(
+                    examples=[[str(p)] for p in EJEMPLOS_RECORTE],
+                    inputs=inp_a, cache_examples=False,
+                )
 
         with gr.Tab("🖼️ Foto completa"):
             gr.Markdown(
@@ -289,12 +289,10 @@ with gr.Blocks(theme=gr.themes.Soft(), title="Motor de Búsqueda Facial") as dem
             )
             gr.Markdown("**Examples**")
             with gr.Row():
-                ex1 = gr.Image(value="examples/foto1.jpg", type="pil",
-                               interactive=False, width=80, height=80)
-                ex2 = gr.Image(value="examples/foto2.jpg", type="pil",
-                               interactive=False, width=80, height=80)
-            ex1.select(fn=lambda x: x, inputs=ex1, outputs=inp_b)
-            ex2.select(fn=lambda x: x, inputs=ex2, outputs=inp_b)
+                for ruta_ej in EJEMPLOS:
+                    ex = gr.Image(value=str(ruta_ej), type="pil",
+                                  interactive=False, width=80, height=80)
+                    ex.select(fn=lambda x: x, inputs=ex, outputs=inp_b)
 
 demo.queue(default_concurrency_limit=1, max_size=10)
-demo.launch(ssr_mode=False)
+demo.launch(theme=gr.themes.Soft(), ssr_mode=False)
