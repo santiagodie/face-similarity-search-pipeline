@@ -1,0 +1,18 @@
+# Datasets, face crops and derived biometric data (never published)
+noticiasFotos/
+carasRecortadas/
+caras_recortadas/
+examples/
+*.zip
+*.pkl
+
+# Model weights
+*.dat
+*.dat.bz2
+*.h5
+
+# Jupyter / Python
+.ipynb_checkpoints/
+__pycache__/
+.venv/
+venv/
