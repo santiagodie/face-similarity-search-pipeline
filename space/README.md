@@ -13,6 +13,8 @@ short_description: Face search over synthetic faces with FaceNet and a VP-tree
 
 # Face Similarity Search Demo
 
+> **Note:** this Space is not currently deployed. The full demo runs in Colab: [space/build_demo_index.ipynb](https://colab.research.google.com/github/santiagodie/face-similarity-search-pipeline/blob/main/space/build_demo_index.ipynb).
+
 Live demo of the face search pipeline from [santiagodie/face-similarity-search-pipeline](https://github.com/santiagodie/face-similarity-search-pipeline). It finds the most similar faces with dlib detection, FaceNet embeddings and a VP-tree index.
 
 **This demo uses synthetic faces only.** None of the indexed images shows a real person. The original project was built on a private press-photo dataset that is not published, for privacy reasons.
