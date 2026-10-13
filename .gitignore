@@ -8,7 +8,6 @@ caras_recortadas/
 
 # Synthetic-face demo index, generated in Colab and uploaded only to the Space
 space/carasRecortadas/
-space/index_mapping.csv
 space/.gradio/
 space/flagged/
 
