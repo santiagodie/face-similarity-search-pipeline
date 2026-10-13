@@ -19,7 +19,7 @@ Live demo of the face search pipeline from [santiagodie/face-similarity-search-p
 
 ## What is indexed
 
-- **Source faces:** the 750 faces in the `a small samples (750 images)` folder of SFHQ part 3 (listed in `sfhq_pt3_sample_manifest.txt` in the GitHub repo).
+- **Source faces:** the 750 faces in the `a small samples (750 images)` folder of SFHQ part 3 (listed in `sfhq_pt3_sample_manifest.txt` in the GitHub repo). They are mirrored, unchanged, in the [santiagodie/sfhq-pt3-sample-750](https://huggingface.co/datasets/santiagodie/sfhq-pt3-sample-750) dataset.
 - **Variations:** 4 per face, so that every synthetic "identity" has several matches to find: a tighter crop, a slight rotation, a brightness change and a horizontal flip.
 - **Processing:** every image goes through the same steps as the original pipeline:
   1. Downscale to at most 600 px.

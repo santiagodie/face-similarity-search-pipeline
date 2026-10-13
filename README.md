@@ -112,6 +112,7 @@ The `space/` folder holds everything needed for the public demo:
 | `requirements.txt`, `packages.txt`, `README.md` | Hugging Face Space configuration (pinned versions, Space card) |
 | `examples/` | Six SFHQ faces for one-click queries |
 | `sfhq_pt3_sample_manifest.txt` | The 750 SFHQ part 3 files that make up the demo index |
+| `sfhq_dataset_card.md` | Card for the Hugging Face dataset that mirrors those 750 faces |
 | `build_demo_index.ipynb` | Colab notebook that builds the index and deploys the Space |
 
 The demo indexes the 750 faces of the SFHQ part 3 sample ([Kaggle](https://www.kaggle.com/datasets/selfishgene/synthetic-faces-high-quality-sfhq-part-3), CC0). Each face appears in 5 versions: the original, a tighter crop, a slight rotation, a brightness change and a horizontal flip. Every image goes through the same pipeline as the original project.
@@ -122,7 +123,7 @@ The demo indexes the 750 faces of the SFHQ part 3 sample ([Kaggle](https://www.k
 2. Add a Hugging Face write token as the Colab secret `HF_TOKEN`.
 3. Run all cells.
 
-The notebook downloads the faces, builds the index, and creates or updates the Space; running it again replaces the index. The generated index files (`vptree.pkl`, the crops and `index_mapping.csv`) are uploaded only to the Space and are not tracked in this repository.
+The notebook reads the faces from the [santiagodie/sfhq-pt3-sample-750](https://huggingface.co/datasets/santiagodie/sfhq-pt3-sample-750) mirror, builds the index, and creates or updates the Space; running it again replaces the index. Only on the very first run, when the mirror does not exist yet, does it download the faces from Kaggle and create the mirror. Kaggle rate-limits anonymous downloads, so that first run is much faster with Kaggle credentials stored as Colab secrets: `KAGGLE_API_TOKEN`, or `KAGGLE_USERNAME` and `KAGGLE_KEY`. The generated index files (`vptree.pkl`, the crops and `index_mapping.csv`) are uploaded only to the Space and are not tracked in this repository.
 
 ## Known limitations
 
