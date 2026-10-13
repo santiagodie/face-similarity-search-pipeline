@@ -119,7 +119,8 @@ The Gradio app was originally deployed on Hugging Face Spaces, but free CPU hard
 |---|---|
 | `space/build_demo_index.ipynb` | Colab notebook: install, download faces, detect and crop, embeddings and VP-tree, run the app |
 | `space/app.py` | The Gradio app from notebook 04, adapted to load a local index and filter results at the F1-optimal threshold (9.655) |
-| `space/requirements.txt`, `space/packages.txt`, `space/README.md` | Hugging Face Space configuration, kept for a future redeployment |
+| `space/packages.txt` | System dependencies for the Space |
+| `space/README.md` | The Space card, with its YAML header |
 | `space/examples/` | Six SFHQ faces for one-click queries |
 | `space/sfhq_pt3_sample_manifest.txt` | The 750 SFHQ part 3 files the notebook tries to download |
 | `docs/` | Static demo: `index.html`, `embeddings.json` (115 FaceNet embeddings with file names and identities) and `faces/` (the 115 crops) |
