@@ -2,7 +2,7 @@
 
 End-to-end face search over a 21,678-photo press archive: dlib CNN face detection, FaceNet embeddings and a VP-tree index, evaluated against brute-force search and calibrated with ROC and F1 analysis.
 
-**[Live demo](https://huggingface.co/spaces/santiagodie/face-similarity-search-demo)**: the same app and pipeline running on synthetic faces (SFHQ, CC0), not on the original dataset.
+**[Live demo](https://huggingface.co/spaces/santiagodie/face-similarity-search-pipeline)**: the same app and pipeline running on synthetic faces (SFHQ, CC0), not on the original dataset.
 
 ## Overview
 
@@ -76,7 +76,7 @@ What finally worked was a sequential run on a local GPU with CUDA and cuDNN.
 - Face embeddings are cached in an LRU cache (200 entries, keyed by a BLAKE2b hash of the crop).
 - Progress is streamed to the UI with a generator.
 
-The app was deployed on Hugging Face Spaces during the course; that deployment is not public. The public [live demo](https://huggingface.co/spaces/santiagodie/face-similarity-search-demo) runs the same app, extracted to `space/app.py`, on synthetic faces (see [Synthetic-face demo](#synthetic-face-demo)).
+The app was deployed on Hugging Face Spaces during the course; that deployment is not public. The public [live demo](https://huggingface.co/spaces/santiagodie/face-similarity-search-pipeline) runs the same app, extracted to `space/app.py`, on synthetic faces (see [Synthetic-face demo](#synthetic-face-demo)).
 
 ## Getting started
 
@@ -118,7 +118,7 @@ The demo uses faces from the 750-image sample of SFHQ part 3 ([Kaggle](https://w
 
 **To rebuild the demo:**
 
-1. Create the Space `face-similarity-search-demo` by hand on Hugging Face, with the Gradio SDK.
+1. Create the Space `face-similarity-search-pipeline` by hand on Hugging Face, with the Gradio SDK.
 2. Open `space/build_demo_index.ipynb` in Colab (it has an "Open in Colab" badge).
 3. Add a Hugging Face write token as the Colab secret `HF_TOKEN`.
 4. Run all cells.
