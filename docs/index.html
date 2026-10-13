@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Face Similarity Search</title>
+<link rel="icon" href="data:,">
+<meta name="description" content="Static demo of a face similarity search pipeline (dlib, FaceNet, VP-tree) on synthetic faces.">
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --text: #1d1d1f;
+    --muted: #5f6368;
+    --border: #e2e2de;
+    --accent: #2f5bd3;
+    --accent-soft: #e6ecfb;
+    --match: #1f7a4d;
+    --match-soft: #e3f3ea;
+    --nomatch: #9a3412;
+    --nomatch-soft: #fbe9e1;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141416;
+      --surface: #1d1d20;
+      --text: #ececee;
+      --muted: #a1a1aa;
+      --border: #303036;
+      --accent: #8aa8ff;
+      --accent-soft: #232c45;
+      --match: #6fd3a0;
+      --match-soft: #173326;
+      --nomatch: #f4a582;
+      --nomatch-soft: #3a2219;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 980px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 4px; }
+  h2 { font-size: 1.15rem; margin: 0 0 12px; }
+  .subtitle { color: var(--muted); margin: 0 0 20px; }
+  .intro p { margin: 0 0 10px; max-width: 70ch; }
+  .links { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 28px; }
+  .links a {
+    display: inline-block; padding: 8px 14px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--accent); text-decoration: none; font-weight: 600; font-size: .95rem;
+  }
+  .links a:hover, .links a:focus-visible { border-color: var(--accent); }
+  section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 20px; }
+  .hint { color: var(--muted); font-size: .92rem; margin: -6px 0 14px; }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+  .gallery button {
+    padding: 0; border: 2px solid transparent; border-radius: 8px; background: none;
+    cursor: pointer; overflow: hidden; aspect-ratio: 1;
+  }
+  .gallery button img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .gallery button:hover { border-color: var(--border); }
+  .gallery button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .gallery button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+  .toolbar h2 { margin: 0; }
+  .count { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .count button {
+    border: 0; background: var(--surface); color: var(--text); padding: 6px 12px;
+    font: inherit; font-size: .9rem; cursor: pointer;
+  }
+  .count button + button { border-left: 1px solid var(--border); }
+  .count button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .query { display: flex; gap: 14px; align-items: center; margin-bottom: 16px; }
+  .query img { width: 72px; height: 72px; border-radius: 8px; flex: none; }
+  .query p { margin: 0; font-size: .95rem; }
+  .query strong { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .9rem; }
+  .results { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; list-style: none; padding: 0; margin: 0; }
+  .card { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg); }
+  .card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+  .card .body { padding: 8px 10px 10px; }
+  .card .dist { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .card .rank { color: var(--muted); font-weight: 400; }
+  .card .name { color: var(--muted); font-size: .78rem; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; overflow-wrap: anywhere; }
+  .badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .badge { font-size: .72rem; font-weight: 600; padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
+  .yes { background: var(--match-soft); color: var(--match); }
+  .no { background: var(--nomatch-soft); color: var(--nomatch); }
+  .status { color: var(--muted); font-size: .92rem; }
+  footer { color: var(--muted); font-size: .85rem; }
+  footer p { margin: 0 0 6px; }
+  a { color: var(--accent); }
+  @media (max-width: 480px) {
+    h1 { font-size: 1.55rem; }
+    section { padding: 14px; }
+    .gallery { grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px; }
+    .results { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header class="intro">
+    <h1>Face Similarity Search</h1>
+    <p class="subtitle">Static demo with precomputed embeddings</p>
+    <p>
+      This page searches a small index of <strong>115 face crops</strong>: 23 synthetic faces, each in five
+      versions (original, tighter crop, slight rotation, brighter, mirrored). None of them is a real person. The faces come from
+      <a href="https://www.kaggle.com/datasets/selfishgene/synthetic-faces-high-quality-sfhq-part-3">SFHQ part 3</a>
+      by David Beniaguev, released under CC0.
+    </p>
+    <p>
+      The 128-d FaceNet embeddings were computed with the pipeline in this repository: dlib detection, a 20% margin, a 160×160 crop and
+      FaceNet through DeepFace. When you pick a face, your browser compares its embedding with all 115 using an
+      <strong>exact linear search</strong> (Euclidean distance). The VP-tree index from the original pipeline is used in the notebook.
+      Distances up to <strong>9.655</strong>, the F1-optimal threshold from the evaluation notebook, count as a match.
+    </p>
+    <nav class="links" aria-label="Project links">
+      <a href="https://github.com/santiagodie/face-similarity-search-pipeline">GitHub repository</a>
+      <a href="https://colab.research.google.com/github/santiagodie/face-similarity-search-pipeline/blob/main/space/build_demo_index.ipynb">Full demo in Colab: upload your own photo</a>
+    </nav>
+  </header>
+
+  <section aria-labelledby="pick-title">
+    <h2 id="pick-title">1. Pick a face</h2>
+    <p class="hint">The 23 original faces in the index.</p>
+    <div class="gallery" id="gallery" role="group" aria-label="Original faces"></div>
+    <p class="status" id="load-status">Loading embeddings…</p>
+  </section>
+
+  <section aria-labelledby="results-title">
+    <div class="toolbar">
+      <h2 id="results-title">2. Nearest crops</h2>
+      <div class="count" role="group" aria-label="Number of results">
+        <button type="button" data-k="5">5</button>
+        <button type="button" data-k="8" aria-pressed="true">8</button>
+        <button type="button" data-k="10">10</button>
+      </div>
+    </div>
+    <div class="query" id="query" hidden></div>
+    <ol class="results" id="results" aria-live="polite"></ol>
+  </section>
+
+  <footer>
+    <p>Faces: Synthetic Faces High Quality (SFHQ) part 3 by David Beniaguev, CC0
+      (<a href="https://github.com/SelfishGene/SFHQ-dataset">project page</a>). They are synthetic faces generated with StyleGAN2; any resemblance to a real person is coincidental.</p>
+    <p>Code: <a href="https://github.com/santiagodie/face-similarity-search-pipeline">face-similarity-search-pipeline</a>, MIT License.</p>
+  </footer>
+</main>
+
+<script>
+(() => {
+  const VARIANT_LABELS = { orig: "original", crop: "tighter crop", rot: "rotated", bright: "brighter", flip: "mirrored" };
+  const gallery = document.getElementById("gallery");
+  const results = document.getElementById("results");
+  const queryBox = document.getElementById("query");
+  const status = document.getElementById("load-status");
+  let items = [], vectors = [], threshold = 9.655, k = 8, selected = -1;
+
+  const faceUrl = (file) => "faces/" + encodeURIComponent(file);
+
+  function distance(a, b) {
+    let s = 0;
+    for (let i = 0; i < a.length; i++) { const d = a[i] - b[i]; s += d * d; }
+    return Math.sqrt(s);
+  }
+
+  function search(q) {
+    return items
+      .map((it, i) => ({ i, d: distance(vectors[q], vectors[i]) }))
+      .filter((r) => r.i !== q)
+      .sort((x, y) => x.d - y.d);
+  }
+
+  function render() {
+    if (selected < 0) return;
+    const q = items[selected];
+    const ranked = search(selected);
+    const sameTotal = items.filter((it, i) => i !== selected && it.identity === q.identity).length;
+    const sameFound = ranked.filter((r) => r.d <= threshold && items[r.i].identity === q.identity).length;
+    const firstOther = ranked.find((r) => items[r.i].identity !== q.identity);
+
+    queryBox.hidden = false;
+    queryBox.innerHTML = "";
+    const img = document.createElement("img");
+    img.src = faceUrl(q.file); img.alt = "Query face " + q.identity; img.width = 72; img.height = 72;
+    const p = document.createElement("p");
+    p.innerHTML = "Query: <strong></strong><br>" +
+      `${sameFound} of ${sameTotal} variations of this face are within the threshold` +
+      (firstOther ? `; the nearest different face is at d = ${firstOther.d.toFixed(2)}.` : ".");
+    p.querySelector("strong").textContent = q.identity;
+    queryBox.append(img, p);
+
+    results.innerHTML = "";
+    ranked.slice(0, k).forEach((r, n) => {
+      const it = items[r.i];
+      const same = it.identity === q.identity;
+      const match = r.d <= threshold;
+      const li = document.createElement("li");
+      li.className = "card";
+      li.innerHTML = `
+        <img alt="" width="160" height="160" loading="lazy">
+        <div class="body">
+          <div class="dist"><span class="rank">#${n + 1}</span> d = ${r.d.toFixed(3)}</div>
+          <div class="name"></div>
+          <div class="badges">
+            <span class="badge ${match ? "yes" : "no"}">${match ? "≤ " : "> "}${threshold}</span>
+            <span class="badge ${same ? "yes" : "no"}">${same ? "same face" : "different face"}</span>
+          </div>
+        </div>`;
+      const im = li.querySelector("img");
+      im.src = faceUrl(it.file);
+      im.alt = `${it.identity}, ${VARIANT_LABELS[it.variation] || it.variation}, distance ${r.d.toFixed(3)}`;
+      li.querySelector(".name").textContent = `${it.identity} · ${VARIANT_LABELS[it.variation] || it.variation}`;
+      results.append(li);
+    });
+  }
+
+  function select(index, button) {
+    selected = index;
+    gallery.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
+    render();
+  }
+
+  document.querySelectorAll(".count button").forEach((b) => {
+    b.addEventListener("click", () => {
+      k = Number(b.dataset.k);
+      document.querySelectorAll(".count button").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
+      render();
+    });
+  });
+
+  fetch("embeddings.json")
+    .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then((data) => {
+      items = data.items;
+      threshold = data.threshold;
+      vectors = items.map((it) => Float32Array.from(it.embedding));
+      let first = null;
+      items.forEach((it, i) => {
+        if (it.variation !== "orig") return;
+        const b = document.createElement("button");
+        b.type = "button";
+        b.setAttribute("aria-pressed", "false");
+        b.title = it.identity;
+        const im = document.createElement("img");
+        im.src = faceUrl(it.file); im.alt = "Synthetic face " + it.identity; im.width = 160; im.height = 160;
+        b.append(im);
+        b.addEventListener("click", () => select(i, b));
+        gallery.append(b);
+        if (!first) first = [i, b];
+      });
+      status.textContent = `${items.length} embeddings loaded.`;
+      if (first) select(first[0], first[1]);
+    })
+    .catch(() => {
+      status.textContent = "Could not load embeddings.json. If you opened this file directly, serve the docs/ folder with a local web server instead.";
+    });
+})();
+</script>
+</body>
+</html>
