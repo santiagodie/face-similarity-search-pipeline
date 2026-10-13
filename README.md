@@ -2,6 +2,8 @@
 
 End-to-end face search over a 21,678-photo press archive: dlib CNN face detection, FaceNet embeddings and a VP-tree index, evaluated against brute-force search and calibrated with ROC and F1 analysis.
 
+**[Live demo](https://huggingface.co/spaces/santiagodie/face-similarity-search-demo)**: the same app and pipeline running on 750 synthetic faces (SFHQ, CC0), not on the original dataset.
+
 ## Overview
 
 Given a photo of a person, the goal is to find every appearance of that person in a large archive of news photos. The project builds the full pipeline across five Jupyter notebooks: it analyses the dataset, compares three face detectors and three face-recognition models, crops and normalises every face, indexes 38,299 face embeddings in a VP-tree, and evaluates the result. Each step is justified with measurements on the real data.
@@ -74,7 +76,7 @@ What finally worked was a sequential run on a local GPU with CUDA and cuDNN.
 - Face embeddings are cached in an LRU cache (200 entries, keyed by a BLAKE2b hash of the crop).
 - Progress is streamed to the UI with a generator.
 
-The app was deployed on Hugging Face Spaces during the course; that deployment is not public.
+The app was deployed on Hugging Face Spaces during the course; that deployment is not public. The public [live demo](https://huggingface.co/spaces/santiagodie/face-similarity-search-demo) runs the same app, extracted to `space/app.py`, on synthetic faces (see [Synthetic-face demo](#synthetic-face-demo)).
 
 ## Getting started
 
@@ -100,17 +102,39 @@ The dataset, face crops, embeddings and serialised index are not published. In t
 
 From the repository root, open the notebooks in Jupyter or Colab (notebooks 01, 03, 04 and 05 have an "Open in Colab" badge) and run them in order, 01 to 05. Each notebook expects the outputs of the previous one.
 
+## Synthetic-face demo
+
+The `space/` folder holds everything needed for the public demo:
+
+| File | Purpose |
+|---|---|
+| `app.py` | The Gradio app from notebook 04, adapted to load a local index and filter results at the F1-optimal threshold (9.655) |
+| `requirements.txt`, `packages.txt`, `README.md` | Hugging Face Space configuration (pinned versions, Space card) |
+| `examples/` | Six SFHQ faces for one-click queries |
+| `sfhq_pt3_sample_manifest.txt` | The 750 SFHQ part 3 files that make up the demo index |
+| `build_demo_index.ipynb` | Colab notebook that builds the index and deploys the Space |
+
+The demo indexes the 750 faces of the SFHQ part 3 sample ([Kaggle](https://www.kaggle.com/datasets/selfishgene/synthetic-faces-high-quality-sfhq-part-3), CC0). Each face appears in 5 versions: the original, a tighter crop, a slight rotation, a brightness change and a horizontal flip. Every image goes through the same pipeline as the original project.
+
+**To rebuild the demo:**
+
+1. Open `space/build_demo_index.ipynb` in Colab (it has an "Open in Colab" badge).
+2. Add a Hugging Face write token as the Colab secret `HF_TOKEN`.
+3. Run all cells.
+
+The notebook downloads the faces, builds the index, and creates or updates the Space; running it again replaces the index. The generated index files (`vptree.pkl`, the crops and `index_mapping.csv`) are uploaded only to the Space and are not tracked in this repository.
+
 ## Known limitations
 
 - **VP-tree speed:** the VP-tree is roughly 8–11× slower than linear search here (pure-Python `vptree` against vectorised NumPy over 38K vectors). Notebook 04's conclusion still claims an O(log n) improvement; notebook 05's measurements contradict it.
 - **Inconsistent threshold:** notebook 05 applies a threshold of 9.69, while the computed values are 9.719 (ROC) and 9.655 (F1).
-- **Threshold not integrated:** the threshold only appears as a snippet in notebook 05; the app code in notebook 04 does not filter by distance.
+- **Threshold only in the demo app:** in the notebooks the threshold only appears as a snippet in notebook 05, and the app cell in notebook 04 does not filter by distance. `space/app.py` does apply it.
 - **No real labels:** threshold calibration assumes each face's nearest neighbour is the same person. There are no identity labels to verify it.
 - **Not reproducible end to end:**
   - Notebooks 01 and 02 mix Colab paths (`/content/2`) with local paths (`noticiasFotos/2`).
   - Some sections depend on functions defined in earlier sections that were run in a different environment.
   - Some saved outputs do not match the current code.
-- **App not runnable on its own:** the Gradio app exists only inside a notebook cell, and its `examples/` images are not included.
+- **App tied to the course setup in the notebook:** the app cell in notebook 04 still downloads its index from placeholder URLs and its example images are not included. The runnable version is `space/app.py`, which uses the synthetic-face index.
 - **Remote pickles:** the embeddings and index are loaded with `pickle` from remote URLs, which is unsafe with untrusted sources.
 - **Detection errors:** 1,590 of the 21,678 images raised errors during CNN detection and were skipped.
 - **No pinned versions:** dependencies are installed with unpinned `pip install` cells.
@@ -122,9 +146,9 @@ The pipeline processes faces of real, identifiable people, which is biometric da
 - the press-photo dataset or the 38,299 face crops;
 - the face embeddings (`embeddings.pkl`) or the serialised index (`vptree.pkl`);
 - any notebook output showing photos or faces, which were removed from the full git history;
-- a running instance of the search app.
+- a running instance of the search app over the original data.
 
-Only the code, the text outputs and four aggregate charts (resolution scatter, file-size histogram, ROC curve and precision/recall/F1 curves) remain in the notebooks.
+Only the code, the text outputs and four aggregate charts (resolution scatter, file-size histogram, ROC curve and precision/recall/F1 curves) remain in the notebooks. The public demo indexes synthetic faces only.
 
 ## What I learned
 
@@ -140,6 +164,7 @@ Only the code, the text outputs and four aggregate charts (resolution scatter, f
 - [DeepFace](https://github.com/serengil/deepface) by Sefik Ilkin Serengil, which provides the FaceNet, VGG-Face and OpenFace models and weights.
 - [vptree](https://pypi.org/project/vptree/), [OpenCV](https://opencv.org/) (Haar cascade) and [Gradio](https://www.gradio.app/).
 - Press photos by the Government of La Rioja, provided by the course. They are not redistributed.
+- Demo faces from [Synthetic Faces High Quality (SFHQ)](https://github.com/SelfishGene/SFHQ-dataset) by David Beniaguev, part 3, CC0. The licensing caveats are listed in `space/README.md`.
 
 ## License
 
