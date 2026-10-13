@@ -113,7 +113,7 @@ Both demos use synthetic faces from the 750-image sample of SFHQ part 3 ([Kaggle
 
 The demo index contains **23 synthetic faces (115 crops)**: the ones Kaggle allows downloading without authentication. Each face appears in 5 versions: the original, a tighter crop, a slight rotation, a brightness change and a horizontal flip. Every image goes through the same pipeline as the original project: dlib detection, a 160×160 crop with a 20% margin, and FaceNet embeddings.
 
-The Gradio app was originally deployed on Hugging Face Spaces, but free CPU hardware is no longer available for this account, so the full demo now runs in Colab. The Space files are kept in `space/` in case it can be redeployed.
+The Gradio app was originally deployed on Hugging Face Spaces, but free CPU hardware is no longer available for this account, so the full demo now runs in Colab.
 
 | Path | Purpose |
 |---|---|
