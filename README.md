@@ -2,7 +2,9 @@
 
 End-to-end face search over a 21,678-photo press archive: dlib CNN face detection, FaceNet embeddings and a VP-tree index, evaluated against brute-force search and calibrated with ROC and F1 analysis.
 
-**[Live demo](https://huggingface.co/spaces/santiagodie/face-similarity-search-pipeline)**: the same app and pipeline running on synthetic faces (SFHQ, CC0), not on the original dataset.
+**[Live demo (static)](https://santiagodie.github.io/face-similarity-search-pipeline/)**: a gallery of synthetic faces (SFHQ, CC0) with precomputed embeddings, not the original dataset.
+
+**Full demo in Colab:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagodie/face-similarity-search-pipeline/blob/main/space/build_demo_index.ipynb). Use *Run all* to get the complete Gradio app, where you can upload your own photo (see [Demo](#demo)).
 
 ## Overview
 
@@ -76,7 +78,7 @@ What finally worked was a sequential run on a local GPU with CUDA and cuDNN.
 - Face embeddings are cached in an LRU cache (200 entries, keyed by a BLAKE2b hash of the crop).
 - Progress is streamed to the UI with a generator.
 
-The app was deployed on Hugging Face Spaces during the course; that deployment is not public. The public [live demo](https://huggingface.co/spaces/santiagodie/face-similarity-search-pipeline) runs the same app, extracted to `space/app.py`, on synthetic faces (see [Synthetic-face demo](#synthetic-face-demo)).
+The app was deployed on Hugging Face Spaces during the course; that deployment is not public. The same app, extracted to `space/app.py`, now runs on synthetic faces in the Colab demo (see [Demo](#demo)).
 
 ## Getting started
 
@@ -102,28 +104,27 @@ The dataset, face crops, embeddings and serialised index are not published. In t
 
 From the repository root, open the notebooks in Jupyter or Colab (notebooks 01, 03, 04 and 05 have an "Open in Colab" badge) and run them in order, 01 to 05. Each notebook expects the outputs of the previous one.
 
-## Synthetic-face demo
+## Demo
 
-The `space/` folder holds everything needed for the public demo:
+Both demos use synthetic faces from the 750-image sample of SFHQ part 3 ([Kaggle](https://www.kaggle.com/datasets/selfishgene/synthetic-faces-high-quality-sfhq-part-3), CC0), never the original dataset.
 
-| File | Purpose |
+- **[Live demo (static)](https://santiagodie.github.io/face-similarity-search-pipeline/):** a gallery with precomputed embeddings, served by GitHub Pages from `docs/`. Pick one of the 23 faces and the page ranks all 115 crops by Euclidean distance in the browser (exact linear search). It marks the results within the 9.655 threshold and those that belong to the same face.
+- **Full demo in Colab:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagodie/face-similarity-search-pipeline/blob/main/space/build_demo_index.ipynb) Use *Run all*. The notebook downloads the faces, runs the pipeline and starts the full Gradio app from `space/app.py` with a temporary public link (`*.gradio.live`), where you can upload your own photo.
+
+The demo index contains **23 synthetic faces (115 crops)**: the ones Kaggle allows downloading without authentication. Each face appears in 5 versions: the original, a tighter crop, a slight rotation, a brightness change and a horizontal flip. Every image goes through the same pipeline as the original project: dlib detection, a 160×160 crop with a 20% margin, and FaceNet embeddings.
+
+The Gradio app was deployed and working on Hugging Face Spaces. After a change in Hugging Face's policy, however, free CPU hardware is no longer available for Gradio Spaces, so the full demo now runs in Colab. The Space files are kept in `space/` in case it can be redeployed.
+
+| Path | Purpose |
 |---|---|
-| `app.py` | The Gradio app from notebook 04, adapted to load a local index and filter results at the F1-optimal threshold (9.655) |
-| `requirements.txt`, `packages.txt`, `README.md` | Hugging Face Space configuration (pinned versions, Space card) |
-| `examples/` | Six SFHQ faces for one-click queries |
-| `sfhq_pt3_sample_manifest.txt` | The 750 SFHQ part 3 files the notebook tries to download |
-| `build_demo_index.ipynb` | Minimal Colab notebook that builds the index and uploads it to the Space |
+| `space/build_demo_index.ipynb` | Colab notebook: install, download faces, detect and crop, embeddings and VP-tree, run the app |
+| `space/app.py` | The Gradio app from notebook 04, adapted to load a local index and filter results at the F1-optimal threshold (9.655) |
+| `space/requirements.txt`, `space/packages.txt`, `space/README.md` | Hugging Face Space configuration, kept for a future redeployment |
+| `space/examples/` | Six SFHQ faces for one-click queries |
+| `space/sfhq_pt3_sample_manifest.txt` | The 750 SFHQ part 3 files the notebook tries to download |
+| `docs/` | Static demo: `index.html`, `embeddings.json` (115 FaceNet embeddings with file names and identities) and `faces/` (the 115 crops) |
 
-The demo uses faces from the 750-image sample of SFHQ part 3 ([Kaggle](https://www.kaggle.com/datasets/selfishgene/synthetic-faces-high-quality-sfhq-part-3), CC0). Kaggle rate-limits anonymous downloads, so the index holds the six example faces plus however many of the 750 could be downloaded when it was built. Each face appears in 5 versions: the original, a tighter crop, a slight rotation, a brightness change and a horizontal flip. Every image goes through the same pipeline as the original project.
-
-**To rebuild the demo:**
-
-1. Create the Space `face-similarity-search-pipeline` by hand on Hugging Face, with the Gradio SDK.
-2. Open `space/build_demo_index.ipynb` in Colab (it has an "Open in Colab" badge).
-3. Add a Hugging Face write token as the Colab secret `HF_TOKEN`.
-4. Run all cells.
-
-The notebook downloads the faces, builds the crops, embeddings and VP-tree, and uploads the contents of `space/` with the index in a single `upload_folder` call. The generated files (`vptree.pkl` and `carasRecortadas/`) go only to the Space and are not tracked in this repository.
+The files the notebook generates (`vptree.pkl` and `carasRecortadas/`) are not tracked in this repository. The static demo's `embeddings.json` and `faces/` were exported once from one of those runs.
 
 ## Known limitations
 
