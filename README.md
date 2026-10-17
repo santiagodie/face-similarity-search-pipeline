@@ -1,18 +1,57 @@
-# Face Similarity Search Pipeline
+<p align="center"><img src="assets/banner.svg" width="100%" alt="Face Similarity Search Pipeline · University of La Rioja" /></p>
 
-End-to-end face search over a 21,678-photo press archive: dlib CNN face detection, FaceNet embeddings and a VP-tree index, evaluated against brute-force search and calibrated with ROC and F1 analysis.
+<p align="center">End-to-end face search over a 21,678-photo press archive: dlib CNN face detection, FaceNet embeddings and a VP-tree index, evaluated against brute-force search and calibrated with ROC and F1 analysis.</p>
 
-**[Live demo (static)](https://santiagodie.github.io/face-similarity-search-pipeline/)**: a gallery of synthetic faces (SFHQ, CC0) with precomputed embeddings, not the original dataset.
+<p align="center">
+  <img src="https://img.shields.io/badge/language-Python-C9A227?style=flat-square&labelColor=0B1F3A" alt="Language: Python" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-C9A227?style=flat-square&labelColor=0B1F3A" alt="License: MIT" /></a>
+  <a href="https://santiagodie.github.io/face-similarity-search-pipeline/"><img src="https://img.shields.io/badge/live%20demo-GitHub%20Pages-C9A227?style=flat-square&labelColor=0B1F3A" alt="Live demo" /></a>
+</p>
 
-**Full demo in Colab:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagodie/face-similarity-search-pipeline/blob/main/space/build_demo_index.ipynb). Use *Run all* to get the complete Gradio app, where you can upload your own photo (see [Demo](#demo)).
+## Table of Contents
 
-## Overview
+- [About the Project](#about-the-project)
+- [Live Demo](#live-demo)
+- [Features](#features)
+- [Built With](#built-with)
+- [How It Works](#how-it-works)
+- [Results](#results)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [Known Limitations](#known-limitations)
+- [Credits](#credits)
+- [License](#license)
+- [Contact](#contact)
+
+## About the Project
 
 Given a photo of a person, the goal is to find every appearance of that person in a large archive of news photos. The project builds the full pipeline across five Jupyter notebooks: it analyses the dataset, compares three face detectors and three face-recognition models, crops and normalises every face, indexes 38,299 face embeddings in a VP-tree, and evaluates the result. Each step is justified with measurements on the real data.
 
-The photos are press images published by the Government of La Rioja. The course provided the dataset, and it is not included in this repository (see [Privacy and ethics](#privacy-and-ethics)).
+The photos are press images published by the Government of La Rioja. The course provided the dataset, and it is not included in this repository (see [Privacy and Ethics](#privacy-and-ethics)).
 
-Built for the Artificial Intelligence course at the University of La Rioja (2025–26).
+The notebooks, including their explanations and variable names, are written in Spanish, the language of the course.
+
+### Privacy and Ethics
+
+The pipeline processes faces of real, identifiable people, which is biometric data. For that reason, this repository does **not** publish:
+
+- the press-photo dataset or the 38,299 face crops;
+- the face embeddings (`embeddings.pkl`) or the serialised index (`vptree.pkl`);
+- any notebook output showing photos or faces, which were removed from the full git history;
+- a running instance of the search app over the original data.
+
+Only the code, the text outputs and four aggregate charts (resolution scatter, file-size histogram, ROC curve and precision/recall/F1 curves) remain in the notebooks. The public demo indexes synthetic faces only.
+
+## Live Demo
+
+Both demos use synthetic faces from the 750-image sample of SFHQ part 3 ([Kaggle](https://www.kaggle.com/datasets/selfishgene/synthetic-faces-high-quality-sfhq-part-3), CC0), never the original dataset.
+
+- **[Live demo (static)](https://santiagodie.github.io/face-similarity-search-pipeline/):** a gallery with precomputed embeddings, served by GitHub Pages from `docs/`. Pick one of the 23 faces and the page ranks all 115 crops by Euclidean distance in the browser (exact linear search). It marks the results within the 9.655 threshold and those that belong to the same face.
+- **Full demo in Colab:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagodie/face-similarity-search-pipeline/blob/main/space/build_demo_index.ipynb) Use *Run all*. The notebook downloads the faces, runs the pipeline and starts the full Gradio app from `space/app.py` with a temporary public link (`*.gradio.live`), where you can upload your own photo.
+
+The demo index contains **23 synthetic faces (115 crops)**: the ones Kaggle allows downloading without authentication. Each face appears in 5 versions: the original, a tighter crop, a slight rotation, a brightness change and a horizontal flip. Every image goes through the same pipeline as the original project: dlib detection, a 160×160 crop with a 20% margin, and FaceNet embeddings.
+
+The Gradio app was originally deployed on Hugging Face Spaces, but free CPU hardware is no longer available for this account, so the full demo now runs in Colab.
 
 ## Features
 
@@ -24,11 +63,11 @@ Built for the Artificial Intelligence course at the University of La Rioja (2025
 - **Gradio app (code in notebook 04):** two modes, either searching from an already-cropped face or from a full photo. Full-photo mode detects every face (HOG first, CNN as a fallback), embeds them in batches and streams results per face.
 - **Evaluation:** VP-tree compared with vectorised linear search, a self-retrieval test, and similarity-threshold calibration with a ROC curve and a precision/recall/F1 sweep.
 
-## Tech stack
+## Built With
 
 Python · Jupyter / Google Colab · OpenCV · dlib (HOG, CNN MMOD) · DeepFace with TensorFlow / tf-keras (FaceNet, VGG-Face, OpenFace) · `vptree` · NumPy · scikit-learn · Matplotlib · Gradio
 
-## Architecture / how it works
+## How It Works
 
 ```mermaid
 flowchart LR
@@ -42,25 +81,13 @@ flowchart LR
     E --> R[Top-k similar faces]
 ```
 
-| Notebook | Step | Key result |
+| Notebook (in Spanish) | Step | Key result |
 |---|---|---|
 | `Trabajo_AnalisisDataset_01.ipynb` | Dataset analysis | 21,678 images (54 unreadable), most commonly 640×480, 640×426 or 800×600; 82.2% with a Haar-detectable face |
 | `Trabajo_DeteccionCaras_02.ipynb` | Face detection and cropping | CNN chosen for having no false positives; full run on a local GPU in 2,914 s, producing 38,299 crops |
 | `Trabajo_Embeddings_03.ipynb` | Face embeddings | FaceNet chosen: 128-d vectors (cheaper to index than VGG-Face's 4096-d) |
 | `Trabajo_Vptree_y_Busqueda_04.ipynb` | VP-tree search and Gradio app | Top-k search over all 38,299 embeddings |
-| `Trabajo_Evaluacion_05.ipynb` | Evaluation | See results below |
-
-The notebooks, including their explanations and variable names, are written in Spanish, the language of the course.
-
-**Measured results (from the saved notebook outputs):**
-
-- **Detectors** (200 photos, Colab GPU): Haar found 579 faces in 72.2 s, HOG 349 in 50.5 s, and CNN 347 in 19.4 s. Haar had the highest recall but clear false positives. CNN was chosen because a missed face harms the index less than a non-face crop.
-- **Embedding models** (1,000 crops, Colab T4): VGG-Face took 82.7 s, OpenFace 136.0 s and FaceNet 280.2 s.
-- **Search speed** (200 queries, k = 1 to 50): vectorised NumPy linear search took 13.5–16.4 ms per query, against 110–174 ms for the `vptree` index.
-- **Self-retrieval** (500 random indexed faces): 472/500 (94.4%) returned themselves as the nearest neighbour.
-- **Threshold calibration** (5,000 positive and 5,000 negative pairs):
-  - The ROC-optimal distance is 9.719 (TPR 0.978, FPR 0.169).
-  - The F1-optimal distance is 9.655 (precision 0.854, recall 0.975, F1 0.911).
+| `Trabajo_Evaluacion_05.ipynb` | Evaluation | See [Results](#results) |
 
 **Scaling the detection step.** Running dlib CNN over the full dataset needed several attempts, all documented in notebook 02:
 
@@ -78,56 +105,64 @@ What finally worked was a sequential run on a local GPU with CUDA and cuDNN.
 - Face embeddings are cached in an LRU cache (200 entries, keyed by a BLAKE2b hash of the crop).
 - Progress is streamed to the UI with a generator.
 
-The app was deployed on Hugging Face Spaces during the course; that deployment is not public. The same app, extracted to `space/app.py`, now runs on synthetic faces in the Colab demo (see [Demo](#demo)).
+The app was deployed on Hugging Face Spaces during the course; that deployment is not public. The same app, extracted to `space/app.py`, now runs on synthetic faces in the Colab demo (see [Live Demo](#live-demo)).
 
-## Getting started
+## Results
+
+Measured results, from the saved notebook outputs:
+
+- **Detectors** (200 photos, Colab GPU): Haar found 579 faces in 72.2 s, HOG 349 in 50.5 s, and CNN 347 in 19.4 s. Haar had the highest recall but clear false positives. CNN was chosen because a missed face harms the index less than a non-face crop.
+- **Embedding models** (1,000 crops, Colab T4): VGG-Face took 82.7 s, OpenFace 136.0 s and FaceNet 280.2 s.
+- **Search speed** (200 queries, k = 1 to 50): vectorised NumPy linear search took 13.5–16.4 ms per query, against 110–174 ms for the `vptree` index.
+- **Self-retrieval** (500 random indexed faces): 472/500 (94.4%) returned themselves as the nearest neighbour.
+- **Threshold calibration** (5,000 positive and 5,000 negative pairs):
+  - The ROC-optimal distance is 9.719 (TPR 0.978, FPR 0.169).
+  - The F1-optimal distance is 9.655 (precision 0.854, recall 0.975, F1 0.911).
+
+## Getting Started
 
 > **Not re-verified.** The requirements and steps below are taken from the notebooks as they were run during the course. They have not been reinstalled or re-run for this repository.
 
-**Requirements**
+### Prerequisites
 
 - Python 3.13 (local runs) or Google Colab with a T4 GPU.
 - A GPU is effectively required for notebooks 02 and 03. The local runs used CUDA 12.4, cuDNN 9 and Visual Studio Build Tools to build dlib with CUDA support.
-- Packages installed by the notebooks (no versions are pinned):
 
-  ```bash
-  pip install opencv-contrib-python matplotlib cmake dlib deepface tf-keras vptree gradio scikit-learn
-  ```
+### Installation
 
-  Notebook 03 also installs `tensorflow[and-cuda]` for local GPU inference, which is Linux-only.
+Packages installed by the notebooks (no versions are pinned):
 
-**Data**
+```bash
+pip install opencv-contrib-python matplotlib cmake dlib deepface tf-keras vptree gradio scikit-learn
+```
+
+Notebook 03 also installs `tensorflow[and-cuda]` for local GPU inference, which is Linux-only.
+
+### Data
 
 The dataset, face crops, embeddings and serialised index are not published. In the notebooks, their download URLs are replaced with the placeholders `DATASET_URL`, `FACE_CROPS_URL`, `EMBEDDINGS_URL` and `VPTREE_URL`. To run the pipeline you need your own folder of photos. Then replace the placeholders, or skip the download cells and point the path variables at local folders. The dlib MMOD model and the DeepFace weights are downloaded from their public sources.
 
-**Running**
+### Usage
 
 From the repository root, open the notebooks in Jupyter or Colab (notebooks 01, 03, 04 and 05 have an "Open in Colab" badge) and run them in order, 01 to 05. Each notebook expects the outputs of the previous one.
 
-## Demo
+## Project Structure
 
-Both demos use synthetic faces from the 750-image sample of SFHQ part 3 ([Kaggle](https://www.kaggle.com/datasets/selfishgene/synthetic-faces-high-quality-sfhq-part-3), CC0), never the original dataset.
-
-- **[Live demo (static)](https://santiagodie.github.io/face-similarity-search-pipeline/):** a gallery with precomputed embeddings, served by GitHub Pages from `docs/`. Pick one of the 23 faces and the page ranks all 115 crops by Euclidean distance in the browser (exact linear search). It marks the results within the 9.655 threshold and those that belong to the same face.
-- **Full demo in Colab:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagodie/face-similarity-search-pipeline/blob/main/space/build_demo_index.ipynb) Use *Run all*. The notebook downloads the faces, runs the pipeline and starts the full Gradio app from `space/app.py` with a temporary public link (`*.gradio.live`), where you can upload your own photo.
-
-The demo index contains **23 synthetic faces (115 crops)**: the ones Kaggle allows downloading without authentication. Each face appears in 5 versions: the original, a tighter crop, a slight rotation, a brightness change and a horizontal flip. Every image goes through the same pipeline as the original project: dlib detection, a 160×160 crop with a 20% margin, and FaceNet embeddings.
-
-The Gradio app was originally deployed on Hugging Face Spaces, but free CPU hardware is no longer available for this account, so the full demo now runs in Colab.
-
-| Path | Purpose |
-|---|---|
-| `space/build_demo_index.ipynb` | Colab notebook: install, download faces, detect and crop, embeddings and VP-tree, run the app |
-| `space/app.py` | The Gradio app from notebook 04, adapted to load a local index and filter results at the F1-optimal threshold (9.655) |
-| `space/packages.txt` | System dependencies for the Space |
-| `space/README.md` | The Space card, with its YAML header |
-| `space/examples/` | Six SFHQ faces for one-click queries |
-| `space/sfhq_pt3_sample_manifest.txt` | The 750 SFHQ part 3 files the notebook tries to download |
-| `docs/` | Static demo: `index.html`, `embeddings.json` (115 FaceNet embeddings with file names and identities) and `faces/` (the 115 crops) |
+```
+Trabajo_*_01..05.ipynb              # The five pipeline notebooks (in Spanish)
+space/
+├── build_demo_index.ipynb          # Colab notebook: install, download faces, detect and crop, embeddings and VP-tree, run the app
+├── app.py                          # The Gradio app from notebook 04, adapted to load a local index and filter results at the F1-optimal threshold (9.655)
+├── packages.txt                    # System dependencies for the Space
+├── README.md                       # The Space card, with its YAML header
+├── examples/                       # Six SFHQ faces for one-click queries
+└── sfhq_pt3_sample_manifest.txt    # The 750 SFHQ part 3 files the notebook tries to download
+docs/                               # Static demo: index.html, embeddings.json (115 FaceNet embeddings with file names and identities) and faces/ (the 115 crops)
+```
 
 The files the notebook generates (`vptree.pkl` and `carasRecortadas/`) are not tracked in this repository. The static demo's `embeddings.json` and `faces/` were exported once from one of those runs.
 
-## Known limitations
+## Known Limitations
 
 - **VP-tree speed:** the VP-tree is roughly 8–11× slower than linear search here (pure-Python `vptree` against vectorised NumPy over 38K vectors). Notebook 04's conclusion still claims an O(log n) improvement; notebook 05's measurements contradict it.
 - **Inconsistent threshold:** notebook 05 applies a threshold of 9.69, while the computed values are 9.719 (ROC) and 9.655 (F1).
@@ -142,24 +177,6 @@ The files the notebook generates (`vptree.pkl` and `carasRecortadas/`) are not t
 - **Detection errors:** 1,590 of the 21,678 images raised errors during CNN detection and were skipped.
 - **No pinned versions:** dependencies are installed with unpinned `pip install` cells.
 
-## Privacy and ethics
-
-The pipeline processes faces of real, identifiable people, which is biometric data. For that reason, this repository does **not** publish:
-
-- the press-photo dataset or the 38,299 face crops;
-- the face embeddings (`embeddings.pkl`) or the serialised index (`vptree.pkl`);
-- any notebook output showing photos or faces, which were removed from the full git history;
-- a running instance of the search app over the original data.
-
-Only the code, the text outputs and four aggregate charts (resolution scatter, file-size histogram, ROC curve and precision/recall/F1 curves) remain in the notebooks. The public demo indexes synthetic faces only.
-
-## What I learned
-
-- **Algorithmic complexity is not the same as wall-clock time.** A metric tree with good theoretical behaviour lost to a single vectorised NumPy operation at this scale because of interpreter overhead per distance call.
-- **Thread-safety and memory determine how you parallelise.** dlib's CNN model could not be shared across threads, and one model per process exhausted memory, so the practical answer was moving the work to a GPU.
-- **Choose components for what happens downstream.** I picked the detector with fewer false positives over the one with higher recall, because a non-face crop pollutes the embedding index.
-- **Calibrating without ground truth needs explicit assumptions.** Using nearest neighbours as pseudo-positive pairs gives a usable threshold, but it should be reported as an estimate, not an accuracy figure.
-
 ## Credits
 
 - [PyImageSearch](https://pyimagesearch.com/) tutorials on Haar-cascade face detection, dlib HOG/CNN face detection and VP-tree search engines. The `convert_and_trim_bb` helper comes from the dlib tutorial.
@@ -172,3 +189,11 @@ Only the code, the text outputs and four aggregate charts (resolution scatter, f
 ## License
 
 The code is released under the [MIT License](LICENSE). The license does not cover the dataset, which is not part of this repository.
+
+## Contact
+
+Santiago Die · [GitHub](https://github.com/santiagodie) · [LinkedIn](https://www.linkedin.com/in/santiago-die-morejon)
+
+---
+
+Built for the Artificial Intelligence course at the University of La Rioja (2025–26).
